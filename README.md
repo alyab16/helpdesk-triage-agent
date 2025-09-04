@@ -1,6 +1,6 @@
 # Helpdesk Triage Agent — README
 
-A small FastAPI app that classifies incoming support tickets with a tiny PyTorch classifier and uses an LLM (OpenAI) to draft replies or escalate. This README shows how to set up and run the app using **uv** (your `uv` tool/CLI), including the `git clone` step and the `uv init` / `uv pip` / `uv add` workflow you requested.
+A small FastAPI app that classifies incoming support tickets with a tiny PyTorch classifier and uses an LLM (OpenAI) to draft replies or escalate. This README shows how to set up and run the app using **uv** (your `uv` tool/CLI), including the `git clone` step and the `uv init` / `uv add` / `uv pip` workflow you requested.
 
 > Files included in the repository
 - `fastapi_triage_agent.py` — main FastAPI app that runs the triage workflow.
@@ -31,29 +31,12 @@ uv init
 
 ---
 
-## 2) Install PyTorch (CUDA wheel) manually using `uv pip`
+## 2) Install the Python dependencies (requirements.txt) **first**
 
-Install the PyTorch wheel for CUDA 12.6 (as you requested). If you have a CUDA-capable GPU and want the CUDA build:
-
-```bash
-uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
-```
-
-If you do **not** have a GPU or want a CPU-only install, you can install the CPU wheels instead (example fallback):
+Install everything from `requirements.txt` first. This ensures auxiliary packages (e.g., transformers, langchain, python-dotenv, pydantic, etc.) are in place before you add the large PyTorch wheel — which can help avoid dependency-resolution surprises.
 
 ```bash
-# CPU-only (simple pip) - run with uv pip as well if you prefer
-uv pip install torch torchvision
-```
-
-> Note: the PyTorch wheel is large. Make sure you have enough disk space and that your Python version is supported.
-
----
-
-## 3) Install the rest of the Python dependencies from `requirements.txt`
-
-```bash
-# install everything in your requirements file
+# install everything in your requirements file using uv's package installer
 uv add -r requirements.txt
 ```
 
@@ -70,6 +53,23 @@ pydantic==2.11.7
 requests
 ```
 
+---
+
+## 3) Install PyTorch (CUDA wheel) **after** installing requirements
+
+Now install the PyTorch wheel for CUDA 12.6 (if you have a CUDA-capable GPU and want the CUDA build). Installing PyTorch after the rest of the dependencies reduces the chance of pip trying to resolve large wheels into your `uv` lock step in an unexpected way.
+
+**CUDA (GPU) install:**
+```bash
+uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+```
+
+**CPU-only fallback (if you don't have a GPU or want CPU-only):**
+```bash
+uv pip install torch torchvision
+```
+
+> Note: the PyTorch wheel is large. Make sure you have enough disk space and that your Python version is supported.
 
 ---
 
@@ -80,6 +80,8 @@ Create a `.env` in the project root with at least the OpenAI API key:
 ```text
 OPENAI_API_KEY=sk-...
 ```
+
+You can also set `TRIAGE_NEG_THRESHOLD` (e.g., `0.80`) if you want to override the default.
 
 ---
 
@@ -160,11 +162,11 @@ curl -X POST "http://localhost:8000/batch" \
 This project combines a small PyTorch classifier with an LLM-driven orchestration layer. Key components:
 
 - **FastAPI** — HTTP API framework serving `/predict`, `/batch`, and `/health`.
-- **Uvicorn** — ASGI server used to run the FastAPI app (command shown above).
+- **Uvicorn** — ASGI server used to run the FastAPI app.
 - **PyTorch** — used for the local sentiment classifier (`distilbert-base-uncased-finetuned-sst-2-english`).
   - The code auto-selects a device: `"cuda"` (NVIDIA GPU) if available, otherwise `"mps"` (Apple Silicon) if available, otherwise `"cpu"`.
   - If `device == "cuda"` the model is converted to `half()` precision for speed.
-  - You should install the matching PyTorch CUDA wheel for your machine (example `cu126` wheel) if you want GPU acceleration.
+  - Install the matching PyTorch CUDA wheel (example `cu126`) if you want GPU acceleration.
 - **Transformers (Hugging Face)** — model/tokenizer loading and tokenization.
 - **LangGraph** — used to build a small compiled StateGraph workflow (classify → decide → compose reply / escalate).
 - **LangChain OpenAI wrapper (ChatOpenAI)** — used to call the OpenAI chat model for drafting responses and escalations.
