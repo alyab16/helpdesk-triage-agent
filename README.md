@@ -79,6 +79,8 @@ Create a `.env` in the project root with at least the OpenAI API key:
 
 ```text
 OPENAI_API_KEY=sk-...
+# optional
+TRIAGE_NEG_THRESHOLD=0.80
 ```
 
 You can also set `TRIAGE_NEG_THRESHOLD` (e.g., `0.80`) if you want to override the default.
