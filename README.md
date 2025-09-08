@@ -40,19 +40,6 @@ Install everything from `requirements.txt` first. This ensures auxiliary package
 uv add -r requirements.txt
 ```
 
-`requirements.txt` (for reference) should contain:
-```
-fastapi>=0.116.1
-langchain>=0.2
-langchain-openai>=0.3.32
-langgraph>=0.6.6
-transformers>=4.56.0
-uvicorn>=0.35.0
-python-dotenv==1.1.1
-pydantic==2.11.7
-requests
-```
-
 ---
 
 ## 3) Install PyTorch (CUDA wheel) **after** installing requirements
